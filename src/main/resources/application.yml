@@ -1,0 +1,67 @@
+spring:
+  application.name: demo-resilience4j-circuit-break
+
+logging:
+  level:
+    root: info
+    ea.slartibartfast.demo: debug
+    io.github.resilience4j: trace
+
+resilience4j.circuitbreaker:
+  configs:
+    default:
+      registerHealthIndicator: true
+
+management:
+  endpoints.web.exposure.include: '*'
+  endpoint:
+    health.show-details: always
+  health:
+    diskspace.enabled: false
+    circuitbreakers.enabled: true
+    ratelimiters.enabled: false
+    bulkhead.enabled: true
+
+  metrics:
+    tags.application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        resilience4j.circuitbreaker.calls: true
+
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowType: TIME_BASED
+        slidingWindowSize: 60
+        permittedNumberOfCallsInHalfOpenState: 10
+        waitDurationInOpenState: 10000
+        minimumNumberOfCalls: 20
+        failureRateThreshold: 60
+        eventConsumerBufferSize: 10
+        registerHealthIndicator: true
+      someShared:
+        slidingWindowSize: 50
+        permittedNumberOfCallsInHalfOpenState: 10
+    instances:
+      cardApi:
+        baseConfig: default
+        minimumNumberOfCalls: 10
+        waitDurationInOpenState: 20000
+        ignoreExceptions:
+          - org.springframework.web.client.HttpClientErrorException
+          - ea.slartibartfast.demo.resilience4j.exception.CardServiceBusinessException
+      balanceApi:
+        baseConfig: someShared
+
+  bulkhead:
+    configs:
+      default:
+        maxConcurrentCalls: 100
+
+    instances:
+      cardApi:
+        maxWaitDuration: 10ms
+        maxConcurrentCalls: 4
