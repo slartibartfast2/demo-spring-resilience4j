@@ -1,3 +1,6 @@
+server:
+  port: 8844
+
 spring:
   application.name: demo-resilience4j-circuit-break
 
@@ -60,8 +63,18 @@ resilience4j:
     configs:
       default:
         maxConcurrentCalls: 100
-
     instances:
       cardApi:
         maxWaitDuration: 10ms
         maxConcurrentCalls: 4
+
+  retry:
+    configs:
+      default:
+        maxRetryAttempts: 3
+        waitDuration: 3000
+        ignoreExceptions:
+          - io.github.resilience4j.circuitbreaker.CallNotPermittedException
+    instances:
+      cardApi:
+        baseConfig: default
